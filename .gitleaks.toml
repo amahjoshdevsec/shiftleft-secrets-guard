@@ -1,0 +1,28 @@
+# Extend the default Gitleaks rules with org-specific patterns and a reviewed allowlist.
+# Requires gitleaks >= 8.25 ([[allowlists]] syntax).
+title = "org gitleaks config"
+
+[extend]
+useDefault = true
+
+# Internal token format the vendor rules will never know about. The same rule lives in
+# guard/secret_guard.py (internal-service-token); a unit test keeps the two identical.
+[[rules]]
+id = "internal-service-token"
+description = "Internal platform service token"
+regex = '''\bcorp_svc_[A-Za-z0-9]{32}\b'''
+keywords = ["corp_svc_"]
+
+# Every entry needs an owner and a reason in the PR that adds it.
+[[allowlists]]
+description = "Generated demo fixtures (git-ignored, never committed) and lock files"
+paths = [
+  '''^demo/fixtures/''',
+  '''(.*?)\.lock$''',
+]
+
+[[allowlists]]
+description = "Documented placeholders"
+regexes = [
+  '''(?i)your_api_key_here''',
+]

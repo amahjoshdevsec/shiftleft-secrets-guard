@@ -1,0 +1,59 @@
+# CI for this repository itself: the guard's own tests, an end-to-end run of the demo,
+# a self-scan, and Terraform checks. The portable security gate is secret-guard.yml.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.13"]   # also tested locally on 3.9.6, the macOS system Python
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install pytest==8.3.5
+      - run: pytest -q
+      - name: Demo runs end to end
+        run: bash demo/run_demo.sh --auto
+      - name: Self-scan (the repo contains no secrets)
+        run: git ls-files -z | python3 guard/secret_guard.py scan --stage ci --files-from - --null --fail-on medium
+
+  terraform:
+    name: terraform-validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - name: Checkov (report-only during rollout, flip soft_fail once baselined)
+        uses: bridgecrewio/checkov-action@a32f8b5c5c7c958bc38947c65dfe139debaf0607 # v12.3140.0
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true

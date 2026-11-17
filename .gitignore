@@ -1,0 +1,24 @@
+# generated demo data (fake secrets, rebuilt by demo/make_fixtures.py)
+demo/fixtures/
+
+# never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# scanner output
+*.sarif
+changed.txt
+changed.z
+
+# tooling
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+.terraform/
+.terraform.lock.hcl
+*.tfstate*
+*.tfplan

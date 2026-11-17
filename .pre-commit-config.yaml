@@ -1,0 +1,16 @@
+# Layer 2: stop secrets before they enter git history.
+# Install once per clone:  pip install pre-commit && pre-commit install
+# The gitleaks hook builds from source (pre-commit downloads Go for you). If that is slow,
+# switch the id to gitleaks-docker (needs Docker) or gitleaks-system (needs gitleaks on PATH).
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks          # broad, community-maintained rule set
+  - repo: local
+    hooks:
+      - id: secret-guard      # org-specific rules, same engine as the AI hooks and CI
+        name: secret_guard (org rules)
+        entry: python3 guard/secret_guard.py scan --stage precommit --fail-on high
+        language: system
+        types: [text]

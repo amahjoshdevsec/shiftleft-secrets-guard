@@ -1,0 +1,9 @@
+# Changes to the guard, its configuration and its exceptions need AppSec review.
+# Replace the team with your own. The ruleset in terraform/ requires code owner review.
+/guard/                    @your-org/appsec
+/.claude/                  @your-org/appsec
+/.gitleaks.toml            @your-org/appsec
+/.pre-commit-config.yaml   @your-org/appsec
+/.secret-guard-allowlist   @your-org/appsec
+/.github/workflows/        @your-org/appsec
+/terraform/                @your-org/appsec
