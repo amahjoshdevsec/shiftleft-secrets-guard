@@ -1,0 +1,1 @@
+export DB_PASSWORD=Gr4_z4rGZ3Ms4XENL93NpgNl
