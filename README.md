@@ -16,6 +16,31 @@ Secret scanning that starts **before the developer prompts the AI assistant** an
    metrics/report.py   "how far did each secret get?"
 ```
 
+### Reading the diagram
+
+Read it left to right, in the order a secret would travel. Each layer catches what the one before it missed.
+
+**Left box: the developer's laptop.** These layers stop a secret before it leaves the machine.
+
+* **L1, AI prompt hook.** Scans the prompt before the AI assistant sends it to the model. A token pasted in while debugging is blocked, so the model never sees it.
+* **L1b, AI agent hook.** Checks each action the coding agent tries to take, before it runs. It blocks a call that:
+  * puts a secret into a command or a file;
+  * reads credential files such as `.env`;
+  * dumps the environment (`env`, `printenv`);
+  * skips git hooks (`--no-verify`);
+  * edits the guard's own configuration.
+* **L2, pre-commit.** Runs gitleaks and the same guard engine on staged files, so a secret in code is stopped before it becomes a commit.
+
+**Arrow to the right box.** Anything that gets past the laptop, for example because someone ran `git commit --no-verify` or never installed the hooks, is pushed to GitHub. The laptop layers make leaks unlikely but can be bypassed. The layers on the right cannot be bypassed by a developer.
+
+**Right box: the GitHub org and AWS.** These layers enforce the policy on the server side and handle leaks that already happened.
+
+* **L3, CI gate.** Every pull request runs gitleaks, secret_guard, Semgrep and Trivy. Findings appear in GitHub's Security tab as SARIF. A critical or high finding fails the `secret-guard` check.
+* **L4, Terraform.** Makes that check mandatory. It configures each repo with a ruleset that requires the check, or the org with a required workflow, so a PR cannot merge without passing L3. Onboarding a repo is a Terraform change, not a manual setting.
+* **L5, `contain_aws_key.py`.** If an AWS key leaked anyway, this runbook finds who owns the key and what it was used for (CloudTrail in every region), then deactivates it.
+
+**Bottom: measurement.** Every block writes an event to `audit.jsonl`. Events hold only a keyed HMAC fingerprint of the secret, never the secret itself. `metrics/report.py` uses the fingerprints to count each unique secret once, at the furthest stage it reached (prompt, tool, pre-commit or CI). A secret stopped at the prompt or tool stage is a shift-left win. A secret that reached CI was pushed, so it must be rotated.
+
 ## Why this design
 
 * **Prompts are a new egress path.** Developers paste tokens into AI assistants while debugging. Commit-time scanning only sees what is committed, which is too late for anything already sent to a model.

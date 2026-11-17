@@ -49,6 +49,12 @@ def load(path: Path, since_days: int | None = None) -> list[dict]:
 
 
 def summarize(recs: list[dict]) -> dict:
+    """Aggregate audit records into the report's numbers.
+
+    Policy blocks (POLICY_RULES) are counted apart from secret detections.
+    Each secret fingerprint is credited only to the furthest stage it reached,
+    so a secret caught at pre-commit and again in CI counts once, as CI.
+    """
     secrets = [r for r in recs if r.get("rule_id") not in POLICY_RULES]
     policy = [r for r in recs if r.get("rule_id") in POLICY_RULES]
     furthest: dict[str, int] = {}
