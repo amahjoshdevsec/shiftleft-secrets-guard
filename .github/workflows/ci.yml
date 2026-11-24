@@ -52,7 +52,7 @@ jobs:
       - run: terraform init -backend=false -input=false
       - run: terraform validate
       - name: Checkov (report-only during rollout, flip soft_fail once baselined)
-        uses: bridgecrewio/checkov-action@a32f8b5c5c7c958bc38947c65dfe139debaf0607 # v12.3140.0
+        uses: bridgecrewio/checkov-action@b17b606d6ec72bb8ba5721ad5b7e340b80a9fc39 # v12.3142.0
         with:
           directory: terraform
           framework: terraform
